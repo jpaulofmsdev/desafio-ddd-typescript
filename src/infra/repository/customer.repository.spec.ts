@@ -3,6 +3,9 @@ import CustomerModel from "../db/sequelize/model/customer.model";
 import CustomerRepository from "./customer.repository";
 import Customer from "../../domain/entity/customer";
 import Address from "../../domain/entity/address";
+import EventDispatcher from "../../domain/event/@shared/event-dispatcher";
+import SendConsoleLog1WhenCustomerIsCreatedEventHandler from "../../domain/event/customer/handler/send-console-log1-when-customer-is-created.handler";
+import SendConsoleLog2WhenCustomerIsCreatedEventHandler from "../../domain/event/customer/handler/send-console-log2-when-customer-is-created.handler";
 
 describe('CustomerRepository test', () => {
     
@@ -116,4 +119,30 @@ describe('CustomerRepository test', () => {
         expect(foundCustomers[0]).toStrictEqual(customer1)
         expect(foundCustomers[1]).toStrictEqual(customer2)
     })
+
+    it('should notify when a customer is created', async () => {
+        // Arrange
+        const eventHandler1 = new SendConsoleLog1WhenCustomerIsCreatedEventHandler()
+        const eventHandler2 = new SendConsoleLog2WhenCustomerIsCreatedEventHandler()
+        const eventDispatcher = new EventDispatcher()
+        eventDispatcher.register('CustomerCreatedEvent', eventHandler1)
+        eventDispatcher.register('CustomerCreatedEvent', eventHandler2)
+        const spyEventHandler1 = jest.spyOn(eventHandler1, 'handle')
+        const spyEventHandler2 = jest.spyOn(eventHandler1, 'handle')
+
+        const customerRepository = new CustomerRepository(eventDispatcher)
+        const customer = new Customer('123', 'Customer 1', new Address('Street 1', 1, 'Zipcode 1', 'City 1'))
+        customer.activate()
+
+        expect(spyEventHandler1).toHaveBeenCalledTimes(0)
+        expect(spyEventHandler2).toHaveBeenCalledTimes(0)
+
+        // Act
+        await customerRepository.create(customer)
+
+        // Assert
+        expect(spyEventHandler1).toHaveBeenCalledTimes(1)
+        expect(spyEventHandler2).toHaveBeenCalledTimes(1)
+    })
+
 })
