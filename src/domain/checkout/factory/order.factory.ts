@@ -1,0 +1,23 @@
+import Order from "../entity/order"
+import IOrder from "../entity/order.interface"
+import OrderItem from "../entity/order_item"
+
+interface OrderFactoryProps {
+    id: string
+    customerId: string
+    items: {
+        id: string
+        name: string
+        productId: string
+        price: number
+        quantity: number
+    }[]
+}
+
+export default class OrderFactory {
+
+    static create(props: OrderFactoryProps): IOrder {
+        const items = props.items.map(item => new OrderItem(item.id, item.name, item.price, item.productId, item.quantity))
+        return new Order(props.id, props.customerId, items)
+    }
+}
